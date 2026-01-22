@@ -1,0 +1,13 @@
+:80 {
+
+  # MediaMTX web player + assets
+  @mediamtx path /cam* /static/*
+  handle @mediamtx {
+    reverse_proxy mediamtx:8889
+  }
+
+  # NiceGUI for everything else
+  handle {
+    reverse_proxy nicegui:6969
+  }
+}

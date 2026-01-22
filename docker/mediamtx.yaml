@@ -1,0 +1,4 @@
+paths:
+  cam:
+    source: "rtsp://127.0.0.1:554"
+    rtspTransport: tcp
