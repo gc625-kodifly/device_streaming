@@ -1,6 +1,7 @@
 # device_streaming
 streaming local camera to WAN accesible nicegui based dashboard using Caddy and mediamtx 
 
+https://www.tldraw.com/f/VM7fj2yrXblICyd-BBfxP?d=v63.-282.2386.1412.page
 
 # Setup 
 
