@@ -1,0 +1,28 @@
+{
+  "camera": {
+    "exposure": 10000,
+    "gain": 0,
+    "brightness": 59,
+    "contrast": 50,
+    "trigger_mode": "Continuous",
+    "auto_exposure": true,
+    "auto_white_balance": true
+  },
+  "stream": {
+    "resolution": "1920x1080",
+    "framerate": 30,
+    "bitrate": 4000,
+    "codec": "H.264"
+  },
+  "ptz": {
+    "pan_speed": 32,
+    "tilt_speed": 32,
+    "invert_pan": true,
+    "invert_tilt": false
+  },
+  "map": {
+    "default_lat": 22.42667,
+    "default_lon": 114.198,
+    "zoom": 16
+  }
+}

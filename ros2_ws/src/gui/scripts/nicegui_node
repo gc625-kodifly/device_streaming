@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+
+# Intentionally avoid setuptools console_scripts entry points:
+# those require importlib.metadata to find installed package metadata, which is
+# often missing under colcon --symlink-install. Importing the module is enough
+# because gui.node starts NiceGUI (and the ROS thread) at import time.
+
+import gui.node  # noqa: F401
+
+

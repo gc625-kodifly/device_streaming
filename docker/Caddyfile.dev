@@ -1,0 +1,15 @@
+:80 {
+
+  # MediaMTX web player + assets + API/WebRTC endpoints
+  @mediamtx path /cam* /static/* /api/* /webrtc/* /hls/*
+  handle @mediamtx {
+    reverse_proxy mediamtx:8889
+  }
+
+  # NiceGUI is run inside the rosdev container in the dev profile
+  handle {
+    reverse_proxy rosdev:6969
+  }
+}
+
+
