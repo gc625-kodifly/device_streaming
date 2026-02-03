@@ -73,6 +73,7 @@ services:
     expose:
       - "8889"
     ports:
+      - "8554:8554"
       - "${WEBRTC_UDP_PORT:-8189}:8189/udp"
     environment:
       # override: paths.cam.source

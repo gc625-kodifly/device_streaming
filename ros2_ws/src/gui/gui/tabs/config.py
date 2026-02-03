@@ -1,194 +1,117 @@
 from nicegui import ui
+import os
 
-from ..settings import settings, DEFAULT_SETTINGS
-
-
+mtx_path = os.environ.get("MTX_PATH", "cam")
 class ConfigTab:
-    """Configuration tab with camera, stream, PTZ, and SLAM settings."""
+    """Configuration tab - placeholder for future settings."""
     
     def __init__(self):
-        self.ui_elements = {}
+        
+        pass
     
     def build(self, tab):
         """Build the configuration panel."""
         with ui.tab_panel(tab):
             ui.label('Configuration').classes('text-2xl font-bold mb-4')
-            
-            with ui.row().classes('w-full gap-4 flex-wrap'):
-                self._build_camera_panel()
-                self._build_stream_panel()
-                self._build_ptz_panel()
-                self._build_slam_panel()
-            
-            self._build_action_buttons()
+            ui.label('Settings coming soon...').classes('text-gray-500')
+
+
+class ConfigCameraTab:
     
-    def _build_camera_panel(self):
-        """Build camera panel."""
-        cam = settings.camera
-        
-        with ui.card().classes('w-96'):
-            ui.label('Camera').classes('text-lg font-bold mb-2')
-            ui.separator()
-            
-            with ui.column().classes('w-full gap-3 mt-2'):
-                self.ui_elements['camera.exposure'] = ui.number(
-                    label='Exposure (µs)', value=cam['exposure'], min=100, max=100000, step=100
-                ).classes('w-full')
-                
-                self.ui_elements['camera.gain'] = ui.number(
-                    label='Gain (dB)', value=cam['gain'], min=0, max=48, step=1
-                ).classes('w-full')
-                
-                self.ui_elements['camera.brightness'] = ui.slider(
-                    min=0, max=100, value=cam['brightness']
-                ).props('label')
-                ui.label('Brightness').classes('text-xs text-gray-500 -mt-2')
-                
-                self.ui_elements['camera.contrast'] = ui.slider(
-                    min=0, max=100, value=cam['contrast']
-                ).props('label')
-                ui.label('Contrast').classes('text-xs text-gray-500 -mt-2')
-                
-                self.ui_elements['camera.trigger_mode'] = ui.select(
-                    label='Trigger Mode',
-                    options=['Continuous', 'Software', 'Hardware'],
-                    value=cam['trigger_mode']
-                ).classes('w-full')
-                
-                self.ui_elements['camera.auto_exposure'] = ui.switch(
-                    'Auto Exposure', value=cam['auto_exposure']
-                )
-                self.ui_elements['camera.auto_white_balance'] = ui.switch(
-                    'Auto White Balance', value=cam['auto_white_balance']
-                )
+    def __init__(self, node, param_fetcher) -> None:
+        self.node = node
+        self.param_fetcher = param_fetcher
+        self.exposure = None
+        self.brightness = None
+        self.param_fields = {}
+        self.param_types = {}  # Track original types for casting
+    def _on_reset_defaults(self):
+        """Reset parameters to default values."""
+        pass
+
+    def _on_save_apply(self):
+        """Save and apply parameter changes."""
+        # Extract current values from UI fields, casting to original types
+        params_to_set = {}
+        for name, field in self.param_fields.items():
+            value = field.value
+            # Cast back to original type (ui.number always returns float)
+            original_type = self.param_types.get(name)
+            if original_type == int and isinstance(value, float):
+                value = int(value)
+            params_to_set[name] = value
+        try:
+            results = self.param_fetcher.set_all(params_to_set)
+            if all(results):
+                self.node.get_logger().info(f"Successfully set params: {params_to_set}")
+                ui.notify("Parameters saved successfully", type="positive")
+            else:
+                failed = [name for name, ok in zip(params_to_set.keys(), results) if not ok]
+                self.node.get_logger().warning(f"Failed to set some params: {failed}")
+                ui.notify(f"Failed to set: {failed}", type="warning")
+        except Exception as e:
+            self.node.get_logger().error(f"Failed to set params: {e}")
+            ui.notify(f"Error: {e}", type="negative")
+
+    def build(self, tab):
+        # Fetch actual params from the remote node
+        try:
+            params = self.param_fetcher.fetch_all(timeout_sec=5.0)
+            self.node.get_logger().info(f"Camera params: {params}")
+        except Exception as e:
+            self.node.get_logger().error(f"Failed to fetch params: {e}")
+            params = {}
+
     
-    def _build_stream_panel(self):
-        """Build stream panel."""
-        stream = settings.stream
-        
-        with ui.card().classes('w-96'):
-            ui.label('Stream').classes('text-lg font-bold mb-2')
-            ui.separator()
-            
-            with ui.column().classes('w-full gap-3 mt-2'):
-                self.ui_elements['stream.resolution'] = ui.select(
-                    label='Resolution',
-                    options=['1920x1080', '1280x720', '640x480'],
-                    value=stream['resolution']
-                ).classes('w-full')
+        with ui.tab_panel(tab):
+            with ui.row().classes('w-full gap-4'):
+                # Left side - Camera iframe (2/3 width)
+                with ui.element('div').classes('w-[65%]').style('aspect-ratio: 16/9; border: 1px solid #333;'):
+                    ui.element('iframe').props(
+                        f'src="/{mtx_path}/" allow="autoplay; fullscreen"'
+                    ).classes('w-full h-full border-0')
                 
-                self.ui_elements['stream.framerate'] = ui.number(
-                    label='Framerate (fps)', value=stream['framerate'], min=1, max=60, step=1
-                ).classes('w-full')
-                
-                self.ui_elements['stream.bitrate'] = ui.number(
-                    label='Bitrate (kbps)', value=stream['bitrate'], min=500, max=20000, step=100
-                ).classes('w-full')
-                
-                self.ui_elements['stream.codec'] = ui.select(
-                    label='Codec',
-                    options=['H.264', 'H.265', 'MJPEG'],
-                    value=stream['codec']
-                ).classes('w-full')
-    
-    def _build_ptz_panel(self):
-        """Build PTZ panel."""
-        ptz = settings.ptz
-        
-        with ui.card().classes('w-96'):
-            ui.label('PTZ').classes('text-lg font-bold mb-2')
-            ui.separator()
-            
-            with ui.column().classes('w-full gap-3 mt-2'):
-                self.ui_elements['ptz.pan_speed'] = ui.number(
-                    label='Pan Speed', value=ptz['pan_speed'], min=0, max=63, step=1
-                ).classes('w-full')
-                
-                self.ui_elements['ptz.tilt_speed'] = ui.number(
-                    label='Tilt Speed', value=ptz['tilt_speed'], min=0, max=63, step=1
-                ).classes('w-full')
-                
-                self.ui_elements['ptz.invert_pan'] = ui.switch(
-                    'Invert Pan', value=ptz['invert_pan']
-                )
-                self.ui_elements['ptz.invert_tilt'] = ui.switch(
-                    'Invert Tilt', value=ptz['invert_tilt']
-                )
-    
-    def _build_slam_panel(self):
-        """Build SLAM panel."""
-        slam = settings.slam
-        
-        with ui.card().classes('w-96'):
-            ui.label('SLAM').classes('text-lg font-bold mb-2')
-            ui.separator()
-            
-            with ui.column().classes('w-full gap-3 mt-2'):
-                self.ui_elements['slam.enabled'] = ui.switch(
-                    'Enabled', value=slam['enabled']
-                )
-                
-                self.ui_elements['slam.algorithm'] = ui.select(
-                    label='Algorithm',
-                    options=['ORB-SLAM3', 'RTAB-Map', 'LSD-SLAM', 'DSO'],
-                    value=slam['algorithm']
-                ).classes('w-full')
-                
-                self.ui_elements['slam.max_features'] = ui.number(
-                    label='Max Features', value=slam['max_features'], min=100, max=5000, step=100
-                ).classes('w-full')
-                
-                self.ui_elements['slam.scale_factor'] = ui.number(
-                    label='Scale Factor', value=slam['scale_factor'], min=1.0, max=2.0, step=0.1, format='%.1f'
-                ).classes('w-full')
-                
-                self.ui_elements['slam.num_levels'] = ui.number(
-                    label='Pyramid Levels', value=slam['num_levels'], min=1, max=16, step=1
-                ).classes('w-full')
-                
-                self.ui_elements['slam.loop_closure'] = ui.switch(
-                    'Loop Closure', value=slam['loop_closure']
-                )
-                self.ui_elements['slam.relocalization'] = ui.switch(
-                    'Relocalization', value=slam['relocalization']
-                )
-                self.ui_elements['slam.save_map'] = ui.switch(
-                    'Save Map on Exit', value=slam['save_map']
-                )
-    
-    def _build_action_buttons(self):
-        """Build save and reset buttons."""
-        with ui.row().classes('w-full justify-end mt-4'):
-            ui.button(
-                'Reset to Defaults',
-                icon='restore',
-                on_click=self._reset_settings
-            ).props('flat')
-            
-            ui.button(
-                'Save',
-                icon='save',
-                on_click=self._save_settings
-            ).props('color=primary')
-    
-    def _save_settings(self):
-        """Save settings from UI to JSON."""
-        for key, element in self.ui_elements.items():
-            category, setting = key.split('.')
-            settings.set(category, setting, element.value)
-        
-        if settings.save():
-            ui.notify('Settings saved!', type='positive')
-        else:
-            ui.notify('Failed to save settings', type='negative')
-    
-    def _reset_settings(self):
-        """Reset UI elements to default values."""
-        settings.reset()
-        
-        for key, element in self.ui_elements.items():
-            category, setting = key.split('.')
-            default_value = DEFAULT_SETTINGS[category][setting]
-            element.value = default_value
-        
-        ui.notify('Settings reset to defaults', type='info')
+                # Right side - Parameters panel (1/3 width)
+                with ui.card().classes('w-1/3 p-4'):
+                    ui.label('Camera Parameters').classes('text-xl font-bold mb-4')
+                    
+                    # Parameter fields
+                    with ui.column().classes('w-full gap-4'):
+                        for param, value in params.items():
+                            self.param_types[param] = type(value)  # Store original type
+                            if isinstance(value, bool):
+                                self.param_fields[param] = ui.switch(param, value=value)
+                            elif isinstance(value, float):
+                                self.param_fields[param] = ui.number(label=param, value=value, step=0.01)
+                            elif isinstance(value, int):
+                                self.param_fields[param] = ui.number(label=param, value=value, step=1)
+                            elif isinstance(value, str):
+                                self.param_fields[param] = ui.input(label=param, value=value)
+                            
+                            
+                        # self.exposure = ui.number(
+                        #     label='Exposure',
+                        #     value=int(time.time()),
+                        #     step=1
+                        # ).classes('w-full')
+                        
+                        # self.brightness = ui.number(
+                        #     label='Brightness', 
+                        #     value=0,
+                        #     step=1
+                        # ).classes('w-full')
+                    
+                    # Spacer
+                    ui.space()
+                    
+                    # Buttons
+                    with ui.row().classes('w-full gap-2 mt-auto pt-4'):
+                        ui.button(
+                            'Reset to Default',
+                            on_click=self._on_reset_defaults
+                        ).props('outline').classes('flex-1')
+                        
+                        ui.button(
+                            'Save and Apply',
+                            on_click=self._on_save_apply
+                        ).props('color=primary').classes('flex-1')

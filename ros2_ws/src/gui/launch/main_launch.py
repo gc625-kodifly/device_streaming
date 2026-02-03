@@ -9,5 +9,11 @@ def generate_launch_description():
             executable='nicegui_node',
             name='example_gui',
             output='screen',
-        )
+        ),
+        Node(
+            package='lifecycle_py',
+            executable='number_publisher',   # <- from console_scripts
+            name='number_publisher',
+            output='screen',
+        ),
     ])

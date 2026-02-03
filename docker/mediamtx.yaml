@@ -1,4 +1,5 @@
+rtspAddress: :8554
 paths:
   cam:
-    source: "rtsp://127.0.0.1:554"
+    source: rtsp://127.0.0.1:8554/mystream
     rtspTransport: tcp
